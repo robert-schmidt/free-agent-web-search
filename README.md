@@ -17,17 +17,40 @@
 
 ## 🚀 Quick Start
 
+### What is this?
+
+This is a **standalone web search module** that uses Playwright to scrape Google/DuckDuckGo search results. No API keys, no costs, no LLM dependencies.
+
+**What you get:**
+- `core/browser-search.js` — Core search + content extraction engine
+- `wrappers/http-api.js` — HTTP REST API server (port 3099)
+- `wrappers/mcp-server.js` — MCP (Model Context Protocol) server for Claude Desktop / AI agents
+- `wrappers/openclaw-tool.js` — Drop-in replacement for Brave Search in OpenClaw agents
+
 ### Installation
 
+**Clone the repo:**
 ```bash
-npm install @openclaw/browser-search
+git clone https://github.com/robert-schmidt/free-agent-web-search.git
+cd free-agent-web-search
+npm install
+npx playwright install chromium
+```
+
+**Or install from npm** (once published):
+```bash
+npm install free-agent-web-search
 npx playwright install chromium
 ```
 
 ### Basic Usage
 
 ```js
-import { search } from '@openclaw/browser-search';
+// If cloned from GitHub:
+import { search } from './core/browser-search.js';
+
+// If installed from npm:
+// import { search } from 'free-agent-web-search';
 
 const results = await search('Node.js tutorial', { 
   count: 5,
@@ -51,7 +74,7 @@ console.log(results);
 Extract full readable content from search results:
 
 ```js
-import { search } from '@openclaw/browser-search';
+import { search } from './core/browser-search.js';
 
 const results = await search('Playwright documentation', { 
   count: 3,
@@ -80,7 +103,7 @@ const results = await search('Playwright documentation', {
 Reuse browser instance across multiple searches:
 
 ```js
-import { createSearcher } from '@openclaw/browser-search';
+import { createSearcher } from './core/browser-search.js';
 
 const searcher = createSearcher();
 
@@ -91,12 +114,14 @@ const r3 = await searcher.search('query 3');
 await searcher.close();
 ```
 
-## 📦 Integrations
+## 📦 How to Use
 
-### 1. Core Module (Programmatic)
+You can use this module in **4 different ways:**
+
+### 1. **Core Module** (Import directly in your Node.js code)
 
 ```js
-import { search, createSearcher, extractContent } from '@openclaw/browser-search';
+import { search, createSearcher, extractContent } from './core/browser-search.js';
 
 // One-off search
 const results = await search('query', { count: 5, engine: 'google' });
@@ -118,13 +143,13 @@ await searcher.close();
 - `contentLimit` (number) — Limit content extraction to N results
 - `markdown` (boolean, default: true) — Return content as markdown
 
-### 2. HTTP API
+### 2. **HTTP API** (Run as a REST API server)
 
-Start server:
+Start the server (runs on port 3099):
 ```bash
-npm run serve
-# or
 node wrappers/http-api.js
+# or use npm script:
+npm run serve
 ```
 
 Query:
@@ -137,13 +162,13 @@ curl "http://localhost:3099/health"
 **Environment:**
 - `PORT` — HTTP port (default: 3099)
 
-### 3. MCP Server
+### 3. **MCP Server** (For Claude Desktop / AI agents)
 
-Start MCP server:
+Start the MCP server (communicates via stdio JSON-RPC):
 ```bash
-npm run mcp
-# or
 node wrappers/mcp-server.js
+# or use npm script:
+npm run mcp
 ```
 
 Add to Claude Desktop config (`claude_desktop_config.json`):
@@ -158,10 +183,10 @@ Add to Claude Desktop config (`claude_desktop_config.json`):
 }
 ```
 
-### 4. OpenClaw Tool (Drop-in Brave Search Replacement)
+### 4. **OpenClaw Tool** (Drop-in Brave Search replacement for OpenClaw agents)
 
 ```js
-import { webSearch, close } from '@openclaw/browser-search/wrappers/openclaw-tool.js';
+import { webSearch, close } from './wrappers/openclaw-tool.js';
 
 const results = await webSearch({ 
   query: 'test', 
