@@ -1,5 +1,5 @@
 {
-  "name": "@openclaw/browser-search",
+  "name": "free-agent-web-search",
   "version": "1.0.0",
   "description": "Zero-LLM web search using Playwright browser automation. Drop-in replacement for Brave Search API with Google/DuckDuckGo scraping and content extraction.",
   "main": "core/browser-search.js",
@@ -16,18 +16,20 @@
     "search-api",
     "brave-search-alternative",
     "mcp-server",
-    "readability"
+    "readability",
+    "ai-agents",
+    "free-search"
   ],
-  "author": "OpenClaw Contributors",
+  "author": "Robert Schmidt",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/browser-search.git"
+    "url": "https://github.com/robert-schmidt/free-agent-web-search.git"
   },
   "bugs": {
-    "url": "https://github.com/openclaw/browser-search/issues"
+    "url": "https://github.com/robert-schmidt/free-agent-web-search/issues"
   },
-  "homepage": "https://github.com/openclaw/browser-search#readme",
+  "homepage": "https://github.com/robert-schmidt/free-agent-web-search#readme",
   "engines": {
     "node": ">=18.0.0"
   },
