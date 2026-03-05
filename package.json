@@ -1,0 +1,58 @@
+{
+  "name": "@openclaw/browser-search",
+  "version": "1.0.0",
+  "description": "Zero-LLM web search using Playwright browser automation. Drop-in replacement for Brave Search API with Google/DuckDuckGo scraping and content extraction.",
+  "main": "core/browser-search.js",
+  "type": "module",
+  "keywords": [
+    "web-search",
+    "browser-automation",
+    "playwright",
+    "google-search",
+    "duckduckgo",
+    "scraping",
+    "content-extraction",
+    "zero-llm",
+    "search-api",
+    "brave-search-alternative",
+    "mcp-server",
+    "readability"
+  ],
+  "author": "OpenClaw Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openclaw/browser-search.git"
+  },
+  "bugs": {
+    "url": "https://github.com/openclaw/browser-search/issues"
+  },
+  "homepage": "https://github.com/openclaw/browser-search#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "test": "node test/run-tests.js",
+    "test:demo": "node test/demo-content-extraction.js",
+    "serve": "node wrappers/http-api.js",
+    "mcp": "node wrappers/mcp-server.js",
+    "postinstall": "npx playwright install chromium --with-deps || echo 'Note: Run npx playwright install chromium --with-deps if browser installation failed'"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "express": "^4.18.2",
+    "jsdom": "^28.1.0",
+    "playwright": "^1.40.0",
+    "turndown": "^7.2.2"
+  },
+  "devDependencies": {},
+  "files": [
+    "core/",
+    "wrappers/",
+    "test/",
+    "README.md",
+    "LICENSE",
+    "CONTRIBUTING.md",
+    "SECURITY.md"
+  ]
+}
