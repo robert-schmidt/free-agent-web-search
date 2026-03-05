@@ -29,7 +29,6 @@ This is a **standalone web search module** that uses Playwright to scrape Google
 
 ### Installation
 
-**Clone the repo:**
 ```bash
 git clone https://github.com/robert-schmidt/free-agent-web-search.git
 cd free-agent-web-search
@@ -37,10 +36,58 @@ npm install
 npx playwright install chromium
 ```
 
-**Or install from npm** (once published):
+### 🤖 For AI Agents
+
+If you're an AI agent being asked to "install this", here's what to do:
+
+**1. Clone and install:**
 ```bash
-npm install free-agent-web-search
+cd ~/your-workspace  # or wherever you work
+git clone https://github.com/robert-schmidt/free-agent-web-search.git
+cd free-agent-web-search
+npm install
 npx playwright install chromium
+```
+
+**2. Test it works:**
+```bash
+npm test
+# Should show: 8 passed, 0 failed
+```
+
+**3. Choose your integration:**
+
+**Option A: Use as imported module**
+```js
+import { search } from './free-agent-web-search/core/browser-search.js';
+const results = await search('test query', { count: 5 });
+```
+
+**Option B: Run as HTTP API service**
+```bash
+cd free-agent-web-search
+node wrappers/http-api.js &  # Runs on port 3099
+# Then use: curl "http://localhost:3099/search?q=test"
+```
+
+**Option C: Use as MCP server (for Claude Desktop)**
+```bash
+# Add to claude_desktop_config.json:
+{
+  "mcpServers": {
+    "browser-search": {
+      "command": "node",
+      "args": ["/absolute/path/to/free-agent-web-search/wrappers/mcp-server.js"]
+    }
+  }
+}
+```
+
+**Option D: Use as OpenClaw tool (Brave Search replacement)**
+```bash
+# In your OpenClaw agent code:
+node free-agent-web-search/wrappers/openclaw-tool.js "search query"
+# Or import and use programmatically
 ```
 
 ### Basic Usage
