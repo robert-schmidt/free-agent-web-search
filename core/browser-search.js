@@ -15,12 +15,69 @@ const ENGINES = {
   duckduckgo: {
     url: (q) => `https://duckduckgo.com/?q=${encodeURIComponent(q)}&t=h_&ia=web`,
     parse: parseDDG,
+    beforeSearch: null,
   },
   google: {
     url: (q) => `https://www.google.com/search?q=${encodeURIComponent(q)}&num=10&hl=en`,
     parse: parseGoogle,
+    beforeSearch: handleGoogleConsent,
+  },
+  bing: {
+    url: (q) => `https://www.bing.com/search?q=${encodeURIComponent(q)}&count=10`,
+    parse: parseBing,
+    beforeSearch: null,
   },
 };
+
+/**
+ * Handle Google's EU cookie consent wall.
+ * Navigates to consent.google.com first and accepts all cookies,
+ * then returns so the actual search can proceed with cookies set.
+ */
+async function handleGoogleConsent(page) {
+  try {
+    // Navigate to Google first to trigger consent
+    await page.goto('https://www.google.com/', { waitUntil: 'load', timeout: 10000 });
+
+    // Check for consent form — multiple possible selectors across EU regions
+    const consentSelectors = [
+      'button#L2AGLb',                    // "Accept all" on consent.google.com
+      'button[aria-label="Accept all"]',
+      'button:has-text("Accept all")',
+      'button:has-text("Alle akzeptieren")', // German
+      'button:has-text("Tout accepter")',    // French
+      'button:has-text("Accepteer alles")',  // Dutch
+      'form[action*="consent"] button',
+      '#yDmH0d button',                     // Consent dialog button container
+    ];
+
+    for (const selector of consentSelectors) {
+      try {
+        const btn = await page.$(selector);
+        if (btn) {
+          await btn.click();
+          await page.waitForTimeout(1000);
+          return; // Consent accepted
+        }
+      } catch {}
+    }
+
+    // Fallback: try to set the consent cookie directly
+    await page.context().addCookies([{
+      name: 'SOCS',
+      value: 'CAISHAgBEhJnd3NfMjAyNDA1MTUtMF9SQzEaAmRlIAEaBgiA_LmzBg',
+      domain: '.google.com',
+      path: '/',
+    }, {
+      name: 'CONSENT',
+      value: 'PENDING+987',
+      domain: '.google.com',
+      path: '/',
+    }]);
+  } catch (err) {
+    // Non-fatal — search may still work without consent in some regions
+  }
+}
 
 /**
  * Parse DuckDuckGo HTML results page
@@ -89,6 +146,41 @@ async function parseGoogle(page, count) {
         const snipEl = container.querySelector('.VwiC3b, [data-sncf], .IsZvec');
         if (snipEl) snippet = snipEl.textContent.trim();
       }
+      if (title) results.push({ title, url, snippet });
+    }
+    return results;
+  }, count);
+}
+
+/**
+ * Parse Bing search results page
+ * @param {import('playwright').Page} page
+ * @param {number} count
+ * @returns {Promise<Array<{title:string, url:string, snippet:string}>>}
+ */
+async function parseBing(page, count) {
+  return page.evaluate((max) => {
+    const results = [];
+    const seen = new Set();
+    const items = document.querySelectorAll('#b_results .b_algo');
+    for (const item of items) {
+      if (results.length >= max) break;
+      const h2 = item.querySelector('h2');
+      const a = h2 ? h2.querySelector('a') : null;
+      if (!a) continue;
+      let url = a.href;
+      // Decode Bing redirect URLs (/ck/a?...&u=a1<base64>&...)
+      if (url.includes('/ck/a') && url.includes('&u=a1')) {
+        try {
+          const encoded = url.split('&u=a1')[1].split('&')[0];
+          url = decodeURIComponent(atob(encoded));
+        } catch {}
+      }
+      if (!url || !url.startsWith('http') || seen.has(url)) continue;
+      seen.add(url);
+      const title = a.textContent.trim();
+      const snippetEl = item.querySelector('.b_caption p, .b_lineclamp2');
+      const snippet = snippetEl ? snippetEl.textContent.trim() : '';
       if (title) results.push({ title, url, snippet });
     }
     return results;
@@ -198,7 +290,7 @@ export async function extractContent(url, options = {}) {
 export async function search(query, options = {}) {
   const {
     count = 5,
-    engine: engineName = 'google',
+    engine: engineName = 'bing',
     headless = true,
     timeout = 15000,
     browser: externalBrowser = null,
@@ -207,9 +299,11 @@ export async function search(query, options = {}) {
     markdown = true,
   } = options;
 
+  // Auto-fallback: if a specific engine is requested, try it first, then fallback to others
+  const FALLBACK_ORDER = { google: ['google', 'bing'], bing: ['bing', 'google'], duckduckgo: ['duckduckgo', 'bing'] };
   const engines = engineName === 'all'
-    ? ['duckduckgo', 'google']
-    : [engineName];
+    ? ['google', 'bing', 'duckduckgo']
+    : (FALLBACK_ORDER[engineName] || [engineName]);
 
   let browser = externalBrowser;
   let ownsBrowser = false;
@@ -233,6 +327,11 @@ export async function search(query, options = {}) {
       const page = await context.newPage();
 
       try {
+        // Run engine-specific setup (e.g. Google consent handling)
+        if (config.beforeSearch) {
+          await config.beforeSearch(page);
+        }
+
         await page.goto(config.url(query), {
           waitUntil: 'load',
           timeout,
