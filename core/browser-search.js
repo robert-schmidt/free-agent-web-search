@@ -15,17 +15,14 @@ const ENGINES = {
   duckduckgo: {
     url: (q) => `https://duckduckgo.com/?q=${encodeURIComponent(q)}&t=h_&ia=web`,
     parse: parseDDG,
-    beforeSearch: null,
   },
   google: {
     url: (q) => `https://www.google.com/search?q=${encodeURIComponent(q)}&num=10&hl=en`,
     parse: parseGoogle,
-    beforeSearch: handleGoogleConsent,
   },
   bing: {
     url: (q) => `https://www.bing.com/search?q=${encodeURIComponent(q)}&count=10`,
     parse: parseBing,
-    beforeSearch: null,
   },
 };
 
@@ -324,14 +321,18 @@ export async function search(query, options = {}) {
       const context = await browser.newContext({
         userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       });
+
+      // Pre-set Google consent cookies to bypass EU consent wall
+      if (eng === 'google') {
+        await context.addCookies([
+          { name: 'SOCS', value: 'CAISHAgBEhJnd3NfMjAyNDA1MTUtMF9SQzEaAmRlIAEaBgiA_LmzBg', domain: '.google.com', path: '/' },
+          { name: 'CONSENT', value: 'YES+cb.20240515-04-p0.en+FX+', domain: '.google.com', path: '/' },
+        ]);
+      }
+
       const page = await context.newPage();
 
       try {
-        // Run engine-specific setup (e.g. Google consent handling)
-        if (config.beforeSearch) {
-          await config.beforeSearch(page);
-        }
-
         await page.goto(config.url(query), {
           waitUntil: 'load',
           timeout,
