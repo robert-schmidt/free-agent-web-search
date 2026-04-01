@@ -325,9 +325,15 @@ export async function search(query, options = {}) {
       // Pre-set Google consent cookies to bypass EU consent wall
       if (eng === 'google') {
         await context.addCookies([
-          { name: 'SOCS', value: 'CAISHAgBEhJnd3NfMjAyNDA1MTUtMF9SQzEaAmRlIAEaBgiA_LmzBg', domain: '.google.com', path: '/' },
-          { name: 'CONSENT', value: 'YES+cb.20240515-04-p0.en+FX+', domain: '.google.com', path: '/' },
+          { name: 'SOCS', value: 'CAISHAgBEhJnd3NfMjAyNDA1MTUtMF9SQzEaAmRlIAEaBgiA_LmzBg', domain: '.google.com', path: '/', sameSite: 'Lax' },
+          { name: 'CONSENT', value: 'YES+cb.20240515-04-p0.en+FX+', domain: '.google.com', path: '/', sameSite: 'Lax' },
         ]);
+      }
+
+      // Also try Google with gl=us to avoid country-specific redirects
+      if (eng === 'google') {
+        const originalUrl = config.url;
+        config = { ...config, url: (q) => originalUrl(q) + '&gl=us' };
       }
 
       const page = await context.newPage();
