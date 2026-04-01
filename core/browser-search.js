@@ -330,16 +330,15 @@ export async function search(query, options = {}) {
         ]);
       }
 
-      // Also try Google with gl=us to avoid country-specific redirects
-      if (eng === 'google') {
-        const originalUrl = config.url;
-        config = { ...config, url: (q) => originalUrl(q) + '&gl=us' };
-      }
+      // Build search URL — add gl=us for Google to avoid country redirects
+      const searchUrl = eng === 'google'
+        ? config.url(query) + '&gl=us'
+        : config.url(query);
 
       const page = await context.newPage();
 
       try {
-        await page.goto(config.url(query), {
+        await page.goto(searchUrl, {
           waitUntil: 'load',
           timeout,
         });
